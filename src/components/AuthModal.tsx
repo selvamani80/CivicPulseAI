@@ -7,7 +7,7 @@ import {
   User
 } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase.js';
-import { Mail, Lock, User as UserIcon, LogIn, UserPlus, X, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, LogIn, UserPlus, X, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
 
   if (!isOpen) return null;
 
@@ -62,20 +63,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const handleGoogleSignIn = async () => {
     setError(null);
     setLoading(true);
+    setCopiedDomain(false);
     try {
       const userCred = await signInWithPopup(auth, googleProvider);
       if (onSuccess) onSuccess(userCred.user);
       onClose();
     } catch (err: any) {
-      console.error('Google Sign-in error:', err);
+      console.warn('Google Sign-in status:', err?.code || err?.message || err);
       if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
-        setError(`Google Sign-In is restricted on this domain (${window.location.hostname}). Please sign in or sign up using Email & Password below.`);
+        setError(`Google Sign-In domain restricted (${window.location.hostname}). To enable Google login, add this domain under Firebase Auth -> Settings -> Authorized Domains. Otherwise, please use Email & Password below.`);
       } else if (err.code === 'auth/popup-closed-by-user') {
-        // User intentionally closed popup, no error needed or subtle message
+        // User closed popup
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Google Sign-In popup was blocked by your browser. Please allow popups or use Email login.');
+        setError('Google Sign-In popup was blocked by your browser. Please allow popups or use Email & Password below.');
       } else {
-        setError(err.message || 'Google Sign-in failed. Please try again.');
+        setError(err.message || 'Google Sign-in failed. Please try again or use Email & Password below.');
       }
     } finally {
       setLoading(false);
@@ -139,9 +141,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         </div>
 
         {error && (
-          <div className="bg-rose-950/80 border border-rose-800 p-3 rounded-xl text-rose-200 text-xs flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>{error}</span>
+          <div className="bg-rose-950/80 border border-rose-800 p-3 rounded-xl text-rose-200 text-xs space-y-2">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 flex-1">
+                <span>{error}</span>
+                {error.includes('authorized') && (
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.hostname);
+                        setCopiedDomain(true);
+                        setTimeout(() => setCopiedDomain(false), 3000);
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-slate-900 border border-rose-700/60 rounded-lg text-[11px] font-mono text-cyan-300 hover:bg-slate-800 transition cursor-pointer"
+                    >
+                      {copiedDomain ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-cyan-400" />}
+                      <span>{copiedDomain ? 'Domain Copied!' : `Copy: ${window.location.hostname}`}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
