@@ -1,0 +1,12 @@
+{
+  "name": "CivicPulse AI",
+  "description": "AI-powered predictive civic intelligence and community problem prevention platform.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
