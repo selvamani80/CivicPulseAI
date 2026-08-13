@@ -68,8 +68,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       onClose();
     } catch (err: any) {
       console.error('Google Sign-in error:', err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError(err.message || 'Google Sign-in failed');
+      if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
+        setError(`Google Sign-In is restricted on this domain (${window.location.hostname}). Please sign in or sign up using Email & Password below.`);
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        // User intentionally closed popup, no error needed or subtle message
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Google Sign-In popup was blocked by your browser. Please allow popups or use Email login.');
+      } else {
+        setError(err.message || 'Google Sign-in failed. Please try again.');
       }
     } finally {
       setLoading(false);
