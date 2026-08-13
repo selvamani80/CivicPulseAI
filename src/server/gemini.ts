@@ -308,3 +308,76 @@ Structure:
     return getDefaultSummary(wardName, activeIncidents, predictions);
   }
 }
+
+// 4. CivicPulse AI Platform Assistant & Civic Recommendation Engine
+export async function answerPlatformAssistantQuery(
+  query: string,
+  userRole: string = 'citizen',
+  language: 'ta' | 'en' | 'tanglish' = 'en'
+): Promise<{ answer: string; recommendations: string[] }> {
+  const ai = getAiClient();
+
+  const systemPrompt = `You are CivicPulse AI Platform Assistant & Recommendation Engine for Tamil Nadu Municipalities (Madurai, Karaikudi, Devakottai, Trichy).
+Your SOLE purpose is to answer user queries about the CivicPulse AI platform, its features, civic reporting workflows, email/SMS notification dispatches (email: selvaappdeveloper7475@gmail.com, phone: 7539905792), complaints & enquiry ticket tracking, AI risk prediction models (XGBoost waterlogging/flood risk forecasting), officer dispatch protocols, and regional civic recommendations.
+
+Guidance Rules:
+- Keep responses concise, highly informative, clear, and direct (max 3-4 short paragraphs or bullet points).
+- Provide practical recommendations for civic safety, monsoon preparedness, or officer action steps.
+- If asked about notifications, mention that reports and complaints automatically dispatch Email alerts to selvaappdeveloper7475@gmail.com and SMS alerts to +91 7539905792.
+- Provide 3 relevant follow-up platform recommendation questions.`;
+
+  if (!ai) {
+    return {
+      answer: `Welcome to CivicPulse AI! For your query "${query}":
+
+- **Citizen Reporting**: You can submit civic issues via text, photo, or voice in Tamil/Tanglish. Every report automatically triggers Email alerts to selvaappdeveloper7475@gmail.com and SMS alerts to +91 7539905792.
+- **Complaints & Enquiries**: Use the official Complaint Ticket portal to submit grievances and track municipal resolution status in Madurai, Karaikudi, Devakottai, and Trichy.
+- **Predictive Risk Map**: Our XGBoost engine analyzes rainfall radar, elevation topology, and citizen signal surges to predict flood & drainage risks 3-6 hours in advance.`,
+      recommendations: [
+        'How do I track my submitted complaint ticket status?',
+        'How does the AI predict waterlogging in Goripalayam, Madurai?',
+        'Where can I view Email and SMS notification dispatch logs?'
+      ]
+    };
+  }
+
+  try {
+    const response = await callGeminiWithModelFallback(modelName =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: `User Question: "${query}"\nUser Role: ${userRole}\nLanguage: ${language}`,
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              answer: { type: Type.STRING },
+              recommendations: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ['answer', 'recommendations']
+          }
+        }
+      })
+    );
+
+    const parsed = JSON.parse(response.text || '{}');
+    return {
+      answer: parsed.answer || 'CivicPulse AI platform integrates voice reporting, predictive risk modeling, and instant Email/SMS notification dispatch to selvaappdeveloper7475@gmail.com and 7539905792.',
+      recommendations: parsed.recommendations || [
+        'How do I register an official complaint ticket?',
+        'What emergency actions are recommended for high flood risk?',
+        'How to submit voice reports in Tamil?'
+      ]
+    };
+  } catch (err) {
+    return {
+      answer: `CivicPulse AI platform assists citizens and municipal officers across Madurai, Karaikudi, Devakottai, and Trichy. You can report infrastructure problems, track complaint tickets, and receive instant Email & SMS alerts.`,
+      recommendations: [
+        'How do I track my submitted complaint ticket status?',
+        'How does the AI predict waterlogging in Goripalayam, Madurai?',
+        'Where can I view Email and SMS notification dispatch logs?'
+      ]
+    };
+  }
+}

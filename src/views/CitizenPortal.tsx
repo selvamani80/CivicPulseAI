@@ -390,7 +390,7 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
         console.warn('Firestore write notice:', fsErr);
       }
 
-      setSubmitSuccess('Your signal has been registered and ingested into the predictive risk engine!');
+      setSubmitSuccess('Your signal has been registered and ingested into the predictive risk engine! Email alert dispatched to selvaappdeveloper7475@gmail.com and SMS alert sent to 7539905792.');
       setDescription('');
       setImagePreview(null);
       setExtractedAiData(null);

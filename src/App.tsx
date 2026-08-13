@@ -6,6 +6,8 @@ import { auth } from './lib/firebase.js';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { LandingOverview } from './views/LandingOverview.js';
 import { CitizenPortal } from './views/CitizenPortal.js';
+import { EnquiryPortal } from './views/EnquiryPortal.js';
+import { PlatformAssistant } from './views/PlatformAssistant.js';
 import { OfficerDashboard } from './views/OfficerDashboard.js';
 import { AIAnalyticsView } from './views/AIAnalyticsView.js';
 import { AdminPanel } from './views/AdminPanel.js';
@@ -27,6 +29,11 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
+      if (!user) {
+        setIsAuthModalOpen(true);
+      } else {
+        setIsAuthModalOpen(false);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -133,6 +140,23 @@ export default function App() {
             lang={lang}
             onReportSubmitted={fetchData}
             myReports={reports}
+            authUser={authUser}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          />
+        )}
+
+        {activeTab === 'enquiry' && (
+          <EnquiryPortal
+            lang={lang}
+            authUser={authUser}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          />
+        )}
+
+        {activeTab === 'assistant' && (
+          <PlatformAssistant
+            lang={lang}
+            userRole={currentRole}
             authUser={authUser}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />

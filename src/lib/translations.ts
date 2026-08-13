@@ -14,6 +14,8 @@ export const translations = {
     // Navigation
     navOverview: "Overview",
     navReport: "Report Problem",
+    navEnquiry: "Complaints & Enquiries",
+    navAssistant: "Platform AI Assistant",
     navPredictionMap: "Prediction Map",
     navActiveRisks: "Active Risks",
     navAnalytics: "AI Analytics & MLOps",
@@ -119,6 +121,8 @@ export const translations = {
     // Navigation
     navOverview: "முக்கிய பார்வைகள்",
     navReport: "புகார் பதிவு செய்க",
+    navEnquiry: "புகார்கள் & விசாரணைகள்",
+    navAssistant: "AI பிளாட்ஃபார்ம் உதவியாளர்",
     navPredictionMap: "கணிப்பு வரைபடம் (Map)",
     navActiveRisks: "தற்போதைய ஆபத்துகள்",
     navAnalytics: "AI பகுப்பாய்வு",

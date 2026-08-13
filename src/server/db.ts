@@ -8,7 +8,9 @@ import {
   UserProfile,
   ProblemCategory,
   IncidentSeverity,
-  DemoSimulationConfig
+  DemoSimulationConfig,
+  ComplaintEnquiryTicket,
+  NotificationLog
 } from '../types.js';
 
 // Pre-seeded Tamil Nadu Departments
@@ -305,12 +307,68 @@ export let simulationConfig: DemoSimulationConfig = {
   isSimulating: false
 };
 
+// Initial Seed Complaints & Enquiries
+const initialEnquiries: ComplaintEnquiryTicket[] = [
+  {
+    id: 'enq-301',
+    ticketNumber: 'TKT-2026-MAD-101',
+    type: 'complaint',
+    category: 'Drainage Overflow',
+    subject: 'Clogged canal behind Goripalayam main market',
+    description: 'Severe stormwater drainage clogging causing waterlogging near commercial stalls. Requesting immediate municipal pump deployment.',
+    priority: 'high',
+    contactEmail: 'selvaappdeveloper7475@gmail.com',
+    contactPhone: '7539905792',
+    wardLocation: 'Madurai Ward 20 (Goripalayam)',
+    district: 'Madurai',
+    status: 'In Progress',
+    createdAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    officialResponse: 'Madurai Municipal Drainage squad dispatched suction truck to site.',
+    dispatchedEmail: true,
+    dispatchedSms: true
+  },
+  {
+    id: 'enq-302',
+    ticketNumber: 'TKT-2026-KAR-102',
+    type: 'enquiry',
+    category: 'Monsoon Preparedness Enquiry',
+    subject: 'Enquiry on storm drain desilting timeline in Sekkalai Road',
+    description: 'Asking for official schedule of stormwater channel desilting in Karaikudi Ward 12 ahead of heavy rain forecast.',
+    priority: 'medium',
+    contactEmail: 'selvaappdeveloper7475@gmail.com',
+    contactPhone: '7539905792',
+    wardLocation: 'Karaikudi Ward 12 (Sekkalai Road)',
+    district: 'Sivaganga',
+    status: 'Pending',
+    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    dispatchedEmail: true,
+    dispatchedSms: true
+  }
+];
+
+// Initial Notification Dispatch Logs
+const initialLogs: NotificationLog[] = [
+  {
+    id: 'log-101',
+    reportOrTicketId: 'rep-101',
+    type: 'both',
+    emailRecipient: 'selvaappdeveloper7475@gmail.com',
+    phoneRecipient: '7539905792',
+    subject: '[CivicPulse Alert] New Waterlogging Signal Registered',
+    content: 'Report rep-101 received for Goripalayam Junction, Madurai. Emergency email & SMS alerts dispatched.',
+    status: 'delivered',
+    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString()
+  }
+];
+
 // In-Memory Database Store
 class InvertedCivicStore {
   private reports: CitizenReport[] = [...initialReports];
   private predictions: RiskPrediction[] = [...initialPredictions];
   private actions: OfficerAction[] = [];
   private metrics: ModelMetrics = { ...currentModelMetrics };
+  private enquiries: ComplaintEnquiryTicket[] = [...initialEnquiries];
+  private notificationLogs: NotificationLog[] = [...initialLogs];
 
   // Reports
   public getAllReports(): CitizenReport[] {
@@ -510,6 +568,69 @@ class InvertedCivicStore {
 
   public getOfficerActions(): OfficerAction[] {
     return this.actions;
+  }
+
+  // Complaints & Enquiries
+  public getAllEnquiries(): ComplaintEnquiryTicket[] {
+    return [...this.enquiries].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public getEnquiryById(id: string): ComplaintEnquiryTicket | undefined {
+    return this.enquiries.find(e => e.id === id || e.ticketNumber === id);
+  }
+
+  public addEnquiry(ticket: Omit<ComplaintEnquiryTicket, 'id' | 'ticketNumber' | 'createdAt' | 'status'>): ComplaintEnquiryTicket {
+    const regionCode = ticket.wardLocation.includes('Madurai') ? 'MAD'
+      : ticket.wardLocation.includes('Karaikudi') ? 'KAR'
+      : ticket.wardLocation.includes('Devakottai') ? 'DEV'
+      : 'TRI';
+    const num = Math.floor(100 + Math.random() * 900);
+    const newTicket: ComplaintEnquiryTicket = {
+      ...ticket,
+      id: `enq-${Date.now()}`,
+      ticketNumber: `TKT-2026-${regionCode}-${num}`,
+      createdAt: new Date().toISOString(),
+      status: 'Pending',
+      dispatchedEmail: true,
+      dispatchedSms: true
+    };
+    this.enquiries.unshift(newTicket);
+
+    // Auto-record notification log for ticket
+    this.addNotificationLog({
+      reportOrTicketId: newTicket.ticketNumber,
+      type: 'both',
+      emailRecipient: newTicket.contactEmail || 'selvaappdeveloper7475@gmail.com',
+      phoneRecipient: newTicket.contactPhone || '7539905792',
+      subject: `[Ticket ${newTicket.ticketNumber}] ${newTicket.type.toUpperCase()}: ${newTicket.subject}`,
+      content: `Official ticket registered. Category: ${newTicket.category}, Location: ${newTicket.wardLocation}. Priority: ${newTicket.priority.toUpperCase()}.`,
+      status: 'delivered'
+    });
+
+    return newTicket;
+  }
+
+  public updateEnquiryStatus(id: string, status: ComplaintEnquiryTicket['status'], officialResponse?: string): ComplaintEnquiryTicket | undefined {
+    const item = this.enquiries.find(e => e.id === id || e.ticketNumber === id);
+    if (!item) return undefined;
+    item.status = status;
+    if (officialResponse) item.officialResponse = officialResponse;
+    return item;
+  }
+
+  // Notification Logs
+  public getAllNotificationLogs(): NotificationLog[] {
+    return [...this.notificationLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  public addNotificationLog(data: Omit<NotificationLog, 'id' | 'timestamp'>): NotificationLog {
+    const log: NotificationLog = {
+      ...data,
+      id: `log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString()
+    };
+    this.notificationLogs.unshift(log);
+    return log;
   }
 
   // Distance helper

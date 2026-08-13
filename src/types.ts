@@ -146,6 +146,37 @@ export interface UserProfile {
   wardAssigned?: string;
 }
 
+export interface ComplaintEnquiryTicket {
+  id: string;
+  ticketNumber: string;
+  type: 'complaint' | 'enquiry';
+  category: string;
+  subject: string;
+  description: string;
+  priority: IncidentSeverity;
+  contactEmail: string;
+  contactPhone: string;
+  wardLocation: string;
+  district: string;
+  status: 'Pending' | 'Under Review' | 'In Progress' | 'Resolved';
+  createdAt: string;
+  officialResponse?: string;
+  dispatchedEmail?: boolean;
+  dispatchedSms?: boolean;
+}
+
+export interface NotificationLog {
+  id: string;
+  reportOrTicketId: string;
+  type: 'email' | 'sms' | 'both';
+  emailRecipient: string;
+  phoneRecipient: string;
+  subject: string;
+  content: string;
+  status: 'delivered' | 'sent';
+  timestamp: string;
+}
+
 export interface DemoSimulationConfig {
   rainfallMmHr: number;
   citizenReportSurge: number;

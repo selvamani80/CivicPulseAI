@@ -17,7 +17,9 @@ import {
   Moon,
   LogIn,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  HelpCircle,
+  Bot
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -129,6 +131,8 @@ export const Header: React.FC<HeaderProps> = ({
           {[
             { id: 'overview', icon: Activity, label: t.navOverview },
             { id: 'citizen', icon: ShieldAlert, label: t.navReport },
+            { id: 'enquiry', icon: HelpCircle, label: t.navEnquiry },
+            { id: 'assistant', icon: Bot, label: t.navAssistant },
             { id: 'dashboard', icon: MapPin, label: t.navPredictionMap },
             { id: 'analytics', icon: BarChart3, label: t.navAnalytics },
             { id: 'admin', icon: Settings, label: t.navAdmin },
