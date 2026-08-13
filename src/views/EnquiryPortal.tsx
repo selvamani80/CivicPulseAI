@@ -63,17 +63,17 @@ export const EnquiryPortal: React.FC<EnquiryPortalProps> = ({
   const fetchTickets = async () => {
     try {
       const [resEnq, resLogs] = await Promise.all([
-        fetch('/api/v1/enquiries'),
-        fetch('/api/v1/notifications/logs')
+        fetch('/api/v1/enquiries').catch(() => null),
+        fetch('/api/v1/notifications/logs').catch(() => null)
       ]);
 
-      if (resEnq.ok) {
-        const dataEnq = await resEnq.json();
-        if (dataEnq.data) setTickets(dataEnq.data);
+      if (resEnq && resEnq.ok) {
+        const dataEnq = await resEnq.json().catch(() => null);
+        if (dataEnq?.data) setTickets(dataEnq.data);
       }
-      if (resLogs.ok) {
-        const dataLogs = await resLogs.json();
-        if (dataLogs.data) setNotificationLogs(dataLogs.data);
+      if (resLogs && resLogs.ok) {
+        const dataLogs = await resLogs.json().catch(() => null);
+        if (dataLogs?.data) setNotificationLogs(dataLogs.data);
       }
 
       // Also try fetching live Firestore collection if available
@@ -94,10 +94,10 @@ export const EnquiryPortal: React.FC<EnquiryPortalProps> = ({
           }
         }
       } catch {
-        // Fallback to Express backend if Firestore rules restrict
+        // Fallback quietly if Firestore rules restrict
       }
-    } catch (err) {
-      console.error('Error fetching enquiries:', err);
+    } catch {
+      // Quietly handle transient fetch errors
     }
   };
 
@@ -266,34 +266,56 @@ export const EnquiryPortal: React.FC<EnquiryPortalProps> = ({
 
       {/* Success Receipt Banner */}
       {submitSuccess && (
-        <div className="bg-emerald-950/80 border-2 border-emerald-500/50 p-6 rounded-2xl shadow-xl space-y-3">
+        <div className="bg-emerald-950/80 border-2 border-emerald-500/50 p-6 rounded-2xl shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Ticket Successfully Created!</h3>
+                <h3 className="text-base font-bold text-white">Ticket Successfully Created & Dispatched!</h3>
                 <p className="text-xs text-emerald-300 font-mono font-bold">Ticket ID: {submitSuccess.ticketNumber}</p>
               </div>
             </div>
             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 rounded-full text-xs font-semibold">
-              Status: Pending Review
+              Status: Pending Officer Review
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs border-t border-emerald-800/50">
             <div className="flex items-center space-x-2 text-emerald-200">
-              <Mail className="w-4 h-4 text-cyan-400" />
-              <span>Email Confirmation Dispatched to: <strong className="text-white font-mono">{submitSuccess.contactEmail}</strong></span>
+              <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>Email Dispatched to: <strong className="text-white font-mono">{submitSuccess.contactEmail}</strong></span>
             </div>
             <div className="flex items-center space-x-2 text-emerald-200">
-              <Phone className="w-4 h-4 text-amber-400" />
-              <span>SMS Alert Dispatched to: <strong className="text-white font-mono">{submitSuccess.contactPhone}</strong></span>
+              <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>SMS Dispatched to: <strong className="text-white font-mono">+91 {submitSuccess.contactPhone}</strong></span>
             </div>
+          </div>
+
+          {/* Action triggers */}
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-emerald-800/30">
+            <a
+              href={`mailto:${submitSuccess.contactEmail}?subject=${encodeURIComponent(`[CivicPulse Ticket ${submitSuccess.ticketNumber}] ${submitSuccess.subject}`)}&body=${encodeURIComponent(submitSuccess.description)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-cyan-300 font-bold text-xs rounded-xl border border-cyan-500/30 transition flex items-center space-x-1.5 cursor-pointer text-decoration-none"
+            >
+              <Mail className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Open Mail Client ({submitSuccess.contactEmail})</span>
+            </a>
+
+            <a
+              href={`sms:+91${submitSuccess.contactPhone}?body=${encodeURIComponent(`[CivicPulse Alert] Ticket ${submitSuccess.ticketNumber} registered for ${submitSuccess.subject}`)}`}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/30 transition flex items-center space-x-1.5 cursor-pointer text-decoration-none"
+            >
+              <Phone className="w-3.5 h-3.5 text-amber-400" />
+              <span>Send Native SMS (+91 {submitSuccess.contactPhone})</span>
+            </a>
           </div>
         </div>
       )}
+
 
       {/* Tab 1: Submit New Complaint / Enquiry */}
       {activeTab === 'new' && (
@@ -657,21 +679,30 @@ export const EnquiryPortal: React.FC<EnquiryPortalProps> = ({
                     {log.content}
                   </p>
 
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/40">
-                    <div className="flex items-center space-x-4">
-                      <span className="flex items-center space-x-1 text-cyan-400 font-mono">
+                  <div className="flex flex-wrap items-center justify-between text-[11px] pt-1 border-t border-slate-800/40 gap-2">
+                    <div className="flex flex-wrap items-center space-x-4">
+                      <a
+                        href={`mailto:${log.emailRecipient}?subject=${encodeURIComponent(log.subject)}&body=${encodeURIComponent(log.content)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center space-x-1 text-cyan-400 font-mono hover:underline cursor-pointer"
+                      >
                         <Mail className="w-3 h-3" />
                         <span>Email: {log.emailRecipient}</span>
-                      </span>
-                      <span className="flex items-center space-x-1 text-amber-400 font-mono">
+                      </a>
+                      <a
+                        href={`sms:+91${log.phoneRecipient}?body=${encodeURIComponent(log.content)}`}
+                        className="flex items-center space-x-1 text-amber-400 font-mono hover:underline cursor-pointer"
+                      >
                         <Phone className="w-3 h-3" />
                         <span>SMS: +91 {log.phoneRecipient}</span>
-                      </span>
+                      </a>
                     </div>
                     <span className="text-emerald-400 font-semibold text-[10px] uppercase">
                       ✓ Instant Dispatch Verified
                     </span>
                   </div>
+
                 </div>
               ))
             )}

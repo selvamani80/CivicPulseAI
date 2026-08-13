@@ -142,13 +142,56 @@ You can ask me questions using your voice (Microphone) or choose from the recomm
     }
   };
 
-  // Text-To-Speech Output
-  const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
+  // Gemini Voice Output via gemini-3.1-flash-tts-preview
+  const speakText = async (text: string) => {
+    setIsSpeaking(true);
+    try {
+      // 1. Attempt Gemini TTS model synthesis from server
+      const res = await fetch('/api/v1/ai/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voiceName: 'Kore' })
+      });
 
-    window.speechSynthesis.cancel(); // Stop any active speech
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.audioBase64) {
+          const binary = atob(data.audioBase64);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
 
-    // Clean markdown symbols for cleaner speech
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+          const pcmData = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
+          const float32Data = new Float32Array(pcmData.length);
+          for (let i = 0; i < pcmData.length; i++) {
+            float32Data[i] = pcmData[i] / 32768.0;
+          }
+
+          const buffer = audioCtx.createBuffer(1, float32Data.length, 24000);
+          buffer.getChannelData(0).set(float32Data);
+
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioCtx.destination);
+          source.onended = () => setIsSpeaking(false);
+          source.start(0);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Gemini voice synthesis fetch notice:', err);
+    }
+
+    // Fallback SpeechSynthesis
+    if (!('speechSynthesis' in window)) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
     const clean = text
       .replace(/[*#_`~]/g, '')
       .replace(/\[.*?\]/g, '')

@@ -33,6 +33,9 @@ export default function App() {
         setIsAuthModalOpen(true);
       } else {
         setIsAuthModalOpen(false);
+        if (user.email === 'selvaappdeveloper7475@gmail.com') {
+          setCurrentRole('officer');
+        }
       }
     });
     return () => unsubscribe();

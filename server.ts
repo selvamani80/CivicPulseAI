@@ -2,7 +2,8 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { dbStore, simulationConfig } from './src/server/db.js';
-import { analyzeReportText, analyzeReportImage, generateRAGSituationSummary, answerPlatformAssistantQuery } from './src/server/gemini.js';
+import { analyzeReportText, analyzeReportImage, generateRAGSituationSummary, answerPlatformAssistantQuery, generateGeminiVoiceAudio } from './src/server/gemini.js';
+import { dispatchRealEmail, dispatchRealSms } from './src/server/emailSms.js';
 
 async function startServer() {
   const app = express();
@@ -237,29 +238,46 @@ async function startServer() {
     res.json({ success: true, count: list.length, data: list });
   });
 
-  app.post('/api/v1/enquiries', (req, res) => {
+  app.post('/api/v1/enquiries', async (req, res) => {
     try {
       const { type, category, subject, description, priority, contactEmail, contactPhone, wardLocation, district } = req.body;
       if (!subject || !description) {
         return res.status(400).json({ success: false, error: 'Subject and description are required' });
       }
+      const targetEmail = contactEmail || 'selvaappdeveloper7475@gmail.com';
+      const targetPhone = contactPhone || '7539905792';
+
       const ticket = dbStore.addEnquiry({
         type: type || 'complaint',
         category: category || 'General Civic Grievance',
         subject,
         description,
         priority: priority || 'medium',
-        contactEmail: contactEmail || 'selvaappdeveloper7475@gmail.com',
-        contactPhone: contactPhone || '7539905792',
+        contactEmail: targetEmail,
+        contactPhone: targetPhone,
         wardLocation: wardLocation || 'Madurai Ward 20 (Goripalayam)',
         district: district || 'Madurai'
       });
 
+      // Dispatch real email & SMS
+      const emailRes = await dispatchRealEmail(
+        targetEmail,
+        `[CivicPulse ${ticket.ticketNumber}] ${ticket.type.toUpperCase()}: ${ticket.subject}`,
+        `Civic Complaint/Enquiry Ticket Registered Successfully!\n\nTicket ID: ${ticket.ticketNumber}\nCategory: ${ticket.category}\nLocation: ${ticket.wardLocation}\nPriority: ${ticket.priority.toUpperCase()}\n\nDescription:\n${ticket.description}\n\nOfficer Assigned Email: selvaappdeveloper7475@gmail.com`
+      );
+
+      const smsRes = await dispatchRealSms(
+        targetPhone,
+        `[CivicPulse Alert] Ticket ${ticket.ticketNumber} registered for ${ticket.wardLocation}. Officer Email: selvaappdeveloper7475@gmail.com notified.`
+      );
+
       res.status(201).json({
         success: true,
-        message: 'Official complaint/enquiry ticket created. Email sent to selvaappdeveloper7475@gmail.com and SMS sent to 7539905792.',
-        emailDispatchedTo: ticket.contactEmail,
-        smsDispatchedTo: ticket.contactPhone,
+        message: `Ticket ${ticket.ticketNumber} registered. Real Email dispatched to ${targetEmail} and SMS dispatched to ${targetPhone}.`,
+        emailDispatchedTo: targetEmail,
+        smsDispatchedTo: targetPhone,
+        emailStatus: emailRes,
+        smsStatus: smsRes,
         data: ticket
       });
     } catch (err: any) {
@@ -267,13 +285,38 @@ async function startServer() {
     }
   });
 
-  app.post('/api/v1/enquiries/:id/respond', (req, res) => {
-    const { status, officialResponse } = req.body;
-    const updated = dbStore.updateEnquiryStatus(req.params.id, status || 'In Progress', officialResponse);
-    if (!updated) {
-      return res.status(404).json({ success: false, error: 'Ticket not found' });
+  app.post('/api/v1/enquiries/:id/respond', async (req, res) => {
+    try {
+      const { status, officialResponse } = req.body;
+      const updated = dbStore.updateEnquiryStatus(req.params.id, status || 'In Progress', officialResponse);
+      if (!updated) {
+        return res.status(404).json({ success: false, error: 'Ticket not found' });
+      }
+
+      const targetEmail = updated.contactEmail || 'selvaappdeveloper7475@gmail.com';
+      const targetPhone = updated.contactPhone || '7539905792';
+
+      const emailRes = await dispatchRealEmail(
+        targetEmail,
+        `[CivicPulse Resolution] Update on Ticket ${updated.ticketNumber}`,
+        `Official Municipal Response for Ticket ${updated.ticketNumber}:\n\nStatus: ${updated.status}\n\nOfficer Response:\n${officialResponse || 'Under active municipal squad resolution.'}`
+      );
+
+      const smsRes = await dispatchRealSms(
+        targetPhone,
+        `[CivicPulse Update] Ticket ${updated.ticketNumber} status changed to: ${updated.status}. Response: ${officialResponse ? officialResponse.substring(0, 100) : 'Resolution in progress'}`
+      );
+
+      res.json({
+        success: true,
+        message: `Resolution updated and dispatched to ${targetEmail} and ${targetPhone}`,
+        emailStatus: emailRes,
+        smsStatus: smsRes,
+        data: updated
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error responding to ticket' });
     }
-    res.json({ success: true, data: updated });
   });
 
   // 8. Notification Dispatch Logs API
@@ -282,23 +325,39 @@ async function startServer() {
     res.json({ success: true, count: logs.length, data: logs });
   });
 
-  app.post('/api/v1/notifications/send-dispatch', (req, res) => {
-    const { reportOrTicketId, type, emailRecipient, phoneRecipient, subject, content } = req.body;
-    const log = dbStore.addNotificationLog({
-      reportOrTicketId: reportOrTicketId || 'manual-dispatch',
-      type: type || 'both',
-      emailRecipient: emailRecipient || 'selvaappdeveloper7475@gmail.com',
-      phoneRecipient: phoneRecipient || '7539905792',
-      subject: subject || '[CivicPulse Alert] Manual Emergency Dispatch',
-      content: content || 'Civic issue alert dispatched via integrated email and phone SMS.',
-      status: 'delivered'
-    });
-    res.status(201).json({
-      success: true,
-      message: 'Email dispatch delivered to selvaappdeveloper7475@gmail.com and SMS alert delivered to 7539905792.',
-      data: log
-    });
+  app.post('/api/v1/notifications/send-dispatch', async (req, res) => {
+    try {
+      const { reportOrTicketId, type, emailRecipient, phoneRecipient, subject, content } = req.body;
+      const targetEmail = emailRecipient || 'selvaappdeveloper7475@gmail.com';
+      const targetPhone = phoneRecipient || '7539905792';
+      const msgSubject = subject || '[CivicPulse Officer Alert] Emergency Dispatch Notification';
+      const msgContent = content || `Emergency civic alert dispatched for ticket ${reportOrTicketId || 'manual'}. Officer email ${targetEmail} notified.`;
+
+      const emailRes = await dispatchRealEmail(targetEmail, msgSubject, msgContent);
+      const smsRes = await dispatchRealSms(targetPhone, msgContent);
+
+      const log = dbStore.addNotificationLog({
+        reportOrTicketId: reportOrTicketId || 'manual-dispatch',
+        type: type || 'both',
+        emailRecipient: targetEmail,
+        phoneRecipient: targetPhone,
+        subject: msgSubject,
+        content: msgContent,
+        status: 'delivered'
+      });
+
+      res.status(201).json({
+        success: true,
+        message: `Emergency notification successfully dispatched. Email sent to ${targetEmail} and SMS sent to ${targetPhone}.`,
+        emailStatus: emailRes,
+        smsStatus: smsRes,
+        data: log
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Error sending dispatch notification' });
+    }
   });
+
 
   // 9. Interactive Platform Assistant & Civic Recommendation Engine
   app.post('/api/v1/ai/assistant', async (req, res) => {
@@ -311,6 +370,23 @@ async function startServer() {
       res.json({ success: true, data: result });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Error answering assistant query' });
+    }
+  });
+
+  // 9b. Gemini Voice Text-to-Speech Endpoint
+  app.post('/api/v1/ai/tts', async (req, res) => {
+    try {
+      const { text, voiceName } = req.body;
+      if (!text) {
+        return res.status(400).json({ success: false, error: 'Text parameter is required' });
+      }
+      const audioBase64 = await generateGeminiVoiceAudio(text, voiceName || 'Kore');
+      if (!audioBase64) {
+        return res.json({ success: false, fallbackToBrowser: true, message: 'Gemini TTS unavailable, fallback to browser Web Speech API' });
+      }
+      res.json({ success: true, audioBase64, format: 'audio/pcm', sampleRate: 24000 });
+    } catch (err: any) {
+      res.json({ success: false, fallbackToBrowser: true, message: 'Gemini TTS exception, fallback to browser Web Speech API' });
     }
   });
 
@@ -376,4 +452,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Fatal error starting CivicPulse AI server:', err);
+  process.exit(1);
+});

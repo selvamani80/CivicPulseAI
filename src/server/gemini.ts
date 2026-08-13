@@ -309,7 +309,46 @@ Structure:
   }
 }
 
-// 4. CivicPulse AI Platform Assistant & Civic Recommendation Engine
+// 5. Gemini Voice Text-to-Speech (TTS) Generator
+export async function generateGeminiVoiceAudio(
+  text: string,
+  voiceName: string = 'Kore'
+): Promise<string | null> {
+  const ai = getAiClient();
+  if (!ai) return null;
+
+  try {
+    const cleanText = text
+      .replace(/[*#_`~]/g, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/selvaappdeveloper7475@gmail.com/g, 'selva app developer email')
+      .replace(/7539905792/g, '7 5 3 9 9 0 5 7 9 2');
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-tts-preview',
+      contents: [{ parts: [{ text: `Say in clear natural voice: ${cleanText}` }] }],
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: voiceName || 'Kore' }
+          }
+        }
+      }
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    return base64Audio || null;
+  } catch (err: any) {
+    const isQuota = err?.status === 429 || err?.code === 429 || (err?.message && err.message.includes('429'));
+    if (isQuota) {
+      console.log('ℹ️ Gemini TTS quota reached (10 requests/day limit on free tier). Seamlessly defaulting to browser Web Speech API speech synthesis.');
+    } else {
+      console.warn('Gemini TTS notice:', err?.message || err);
+    }
+    return null;
+  }
+}
 export async function answerPlatformAssistantQuery(
   query: string,
   userRole: string = 'citizen',
