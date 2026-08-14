@@ -19,6 +19,36 @@ export interface SmsDispatchResult {
   messageId?: string;
 }
 
+function isValidHttpUrl(urlString?: string): boolean {
+  if (!urlString || typeof urlString !== 'string') return false;
+  const trimmed = urlString.trim();
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return false;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function parseValidPort(portVal?: string | number, defaultPort = 587): number {
+  if (portVal === undefined || portVal === null || portVal === '') return defaultPort;
+  const port = Number(portVal);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return defaultPort;
+  }
+  return port;
+}
+
+function isValidHost(hostVal?: string): boolean {
+  if (!hostVal || typeof hostVal !== 'string') return false;
+  const trimmed = hostVal.trim();
+  if (trimmed.length < 3) return false;
+  // If host is pure numeric (like a phone number or ID accidentally entered), it's invalid
+  if (/^\d+$/.test(trimmed)) return false;
+  return true;
+}
+
 /**
  * Sends real email via SMTP / Nodemailer if configured, or webhook / mailto fallback
  */
@@ -31,13 +61,14 @@ export async function dispatchRealEmail(
   const recipient = to.trim() || 'selvaappdeveloper7475@gmail.com';
   const mailtoUrl = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = Number(process.env.SMTP_PORT) || 587;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const rawHost = process.env.SMTP_HOST;
+  const smtpHost = isValidHost(rawHost) ? rawHost!.trim() : undefined;
+  const smtpPort = parseValidPort(process.env.SMTP_PORT, 587);
+  const smtpUser = process.env.SMTP_USER?.trim();
+  const smtpPass = process.env.SMTP_PASS?.trim();
   const smtpFrom = process.env.SMTP_FROM || '"CivicPulse AI Officer Portal" <notifications@civicpulse.org>';
 
-  // 1. If SMTP is configured, attempt actual Nodemailer transport
+  // 1. If SMTP is configured with valid host, port & credentials, attempt actual Nodemailer transport
   if (smtpHost && smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
@@ -74,10 +105,10 @@ export async function dispatchRealEmail(
     }
   }
 
-  // 2. If an EMAIL_WEBHOOK_URL environment variable is present, trigger HTTP webhook
-  if (process.env.EMAIL_WEBHOOK_URL) {
+  // 2. If a valid EMAIL_WEBHOOK_URL environment variable is present, trigger HTTP webhook
+  if (isValidHttpUrl(process.env.EMAIL_WEBHOOK_URL)) {
     try {
-      const resp = await fetch(process.env.EMAIL_WEBHOOK_URL, {
+      const resp = await fetch(process.env.EMAIL_WEBHOOK_URL!.trim(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to: recipient, subject, text: bodyText, html: bodyHtml })
@@ -119,9 +150,9 @@ export async function dispatchRealSms(
   const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `+91${cleanPhone}`;
   const smsUrl = `sms:${fullPhone}?body=${encodeURIComponent(content)}`;
 
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromPhone = process.env.TWILIO_PHONE_NUMBER;
+  const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim();
+  const authToken = process.env.TWILIO_AUTH_TOKEN?.trim();
+  const fromPhone = process.env.TWILIO_PHONE_NUMBER?.trim();
 
   // 1. If Twilio credentials present
   if (accountSid && authToken && fromPhone) {
@@ -159,14 +190,14 @@ export async function dispatchRealSms(
     }
   }
 
-  // 2. HTTP Gateway fallback if configured
-  if (process.env.SMS_API_URL) {
+  // 2. HTTP Gateway fallback if configured with a valid HTTP URL
+  if (isValidHttpUrl(process.env.SMS_API_URL)) {
     try {
-      const res = await fetch(process.env.SMS_API_URL, {
+      const res = await fetch(process.env.SMS_API_URL!.trim(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.SMS_API_KEY ? { 'Authorization': `Bearer ${process.env.SMS_API_KEY}` } : {})
+          ...(process.env.SMS_API_KEY ? { 'Authorization': `Bearer ${process.env.SMS_API_KEY.trim()}` } : {})
         },
         body: JSON.stringify({ to: fullPhone, message: content })
       });
@@ -193,3 +224,4 @@ export async function dispatchRealSms(
     smsUrl
   };
 }
+

@@ -45,7 +45,7 @@ const initialReports: CitizenReport[] = [
     location: {
       latitude: 9.9252,
       longitude: 78.1198,
-      ward: 'Ward 20',
+      ward: 'Madurai Ward 20',
       areaName: 'Goripalayam Junction, Madurai',
       district: 'Madurai',
       elevationMeters: 101.2
@@ -53,7 +53,7 @@ const initialReports: CitizenReport[] = [
     imageUrl: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=800&q=80',
     createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
     status: 'unverified',
-    aiConfidence: 0.94,
+    aiConfidence: 0.96,
     verified: false,
     clusterId: 'cluster-madurai-01',
     departmentId: 'dept-1',
@@ -72,14 +72,14 @@ const initialReports: CitizenReport[] = [
     location: {
       latitude: 10.0689,
       longitude: 78.7801,
-      ward: 'Ward 12',
+      ward: 'Karaikudi Ward 12',
       areaName: 'Sekkalai Road, Karaikudi',
       district: 'Sivaganga',
       elevationMeters: 77.5
     },
     createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     status: 'unverified',
-    aiConfidence: 0.91,
+    aiConfidence: 0.94,
     verified: false,
     clusterId: 'cluster-karaikudi-01',
     departmentId: 'dept-1',
@@ -97,7 +97,7 @@ const initialReports: CitizenReport[] = [
     location: {
       latitude: 9.9481,
       longitude: 78.8252,
-      ward: 'Ward 5',
+      ward: 'Devakottai Ward 5',
       areaName: 'Silambani Bazaar, Devakottai',
       district: 'Sivaganga',
       elevationMeters: 52.1
@@ -123,7 +123,7 @@ const initialReports: CitizenReport[] = [
     location: {
       latitude: 10.8285,
       longitude: 78.6945,
-      ward: 'Ward 24',
+      ward: 'Trichy Ward 24',
       areaName: 'Chatram Bus Stand, Trichy',
       district: 'Tiruchirappalli',
       elevationMeters: 88.0
@@ -150,7 +150,7 @@ const initialReports: CitizenReport[] = [
     location: {
       latitude: 9.9492,
       longitude: 78.1560,
-      ward: 'Ward 35',
+      ward: 'Madurai Ward 35',
       areaName: 'Mattuthavani Bus Terminus, Madurai',
       district: 'Madurai',
       elevationMeters: 105.0
@@ -161,6 +161,84 @@ const initialReports: CitizenReport[] = [
     verified: true,
     departmentId: 'dept-3',
     extractedEntities: ['Mattuthavani Madurai', 'Deep pothole', 'Vehicle hazard'],
+    imageQualityOk: true
+  },
+  {
+    id: 'rep-106',
+    userId: 'usr-8',
+    userName: 'Anandhi R',
+    isAnonymous: false,
+    description: 'Alagappa University College Road Karaikudi streetlight pole cable sparking and street pitch dark.',
+    language: 'tanglish',
+    category: 'streetlight_failure',
+    severity: 'high',
+    location: {
+      latitude: 10.0760,
+      longitude: 78.7890,
+      ward: 'Karaikudi Ward 8',
+      areaName: 'College Road (Alagappa Univ), Karaikudi',
+      district: 'Sivaganga',
+      elevationMeters: 80.2
+    },
+    createdAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+    status: 'unverified',
+    aiConfidence: 0.92,
+    verified: false,
+    clusterId: 'cluster-karaikudi-02',
+    departmentId: 'dept-5',
+    extractedEntities: ['Alagappa University Karaikudi', 'Streetlight sparking', 'Power cable fault'],
+    imageQualityOk: true
+  },
+  {
+    id: 'rep-107',
+    userId: 'usr-9',
+    userName: 'Muthukumar T',
+    isAnonymous: false,
+    description: 'Srirangam Temple South Chithirai Street Trichy high sewer leakage overflowing onto pedestrian pathway.',
+    language: 'en',
+    category: 'sewage_overflow',
+    severity: 'critical',
+    location: {
+      latitude: 10.8622,
+      longitude: 78.6908,
+      ward: 'Trichy Ward 5',
+      areaName: 'Srirangam South Chithirai St, Trichy',
+      district: 'Tiruchirappalli',
+      elevationMeters: 82.4
+    },
+    createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    status: 'unverified',
+    aiConfidence: 0.97,
+    verified: false,
+    clusterId: 'cluster-trichy-02',
+    departmentId: 'dept-2',
+    extractedEntities: ['Srirangam Trichy', 'Sewage overflow', 'Pilgrim walkway'],
+    imageQualityOk: true
+  },
+  {
+    id: 'rep-108',
+    userId: 'usr-10',
+    userName: 'Praveen K',
+    isAnonymous: false,
+    description: 'Periyar Bus Stand Madurai drainage backflow flooding pedestrian shopping lanes.',
+    language: 'tanglish',
+    category: 'drainage_blockage',
+    severity: 'high',
+    location: {
+      latitude: 9.9168,
+      longitude: 78.1132,
+      ward: 'Madurai Ward 14',
+      areaName: 'Periyar Bus Stand, Madurai',
+      district: 'Madurai',
+      elevationMeters: 99.8
+    },
+    createdAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    status: 'unverified',
+    aiConfidence: 0.94,
+    verified: false,
+    clusterId: 'cluster-madurai-02',
+    departmentId: 'dept-1',
+    extractedEntities: ['Periyar Bus Stand Madurai', 'Drainage backflow'],
     imageQualityOk: true
   }
 ];
@@ -173,7 +251,7 @@ const initialPredictions: RiskPrediction[] = [
     location: {
       latitude: 9.9252,
       longitude: 78.1198,
-      ward: 'Ward 20',
+      ward: 'Madurai Ward 20',
       areaName: 'Goripalayam Low Basin, Madurai',
       district: 'Madurai',
       elevationMeters: 101.2
@@ -181,7 +259,7 @@ const initialPredictions: RiskPrediction[] = [
     riskProbability: 0.88,
     riskLevel: 'critical',
     expectedTimeWindow: 'Next 1–3 hours',
-    confidence: 0.94,
+    confidence: 0.96,
     contributingFactors: [
       { factor: 'Vaigai Channel Drainage Clogging', importanceScore: 0.42, impact: 'strong_positive', description: 'Rainfall at 42mm/hr in Goripalayam sector' },
       { factor: 'Surge in Citizen Signals', importanceScore: 0.28, impact: 'strong_positive', description: '3 independent reports recorded around Goripalayam junction' },
@@ -202,7 +280,7 @@ const initialPredictions: RiskPrediction[] = [
     location: {
       latitude: 10.0689,
       longitude: 78.7801,
-      ward: 'Ward 12',
+      ward: 'Karaikudi Ward 12',
       areaName: 'Sekkalai Road Commercial Zone, Karaikudi',
       district: 'Sivaganga',
       elevationMeters: 77.5
@@ -210,7 +288,7 @@ const initialPredictions: RiskPrediction[] = [
     riskProbability: 0.79,
     riskLevel: 'high',
     expectedTimeWindow: 'Next 3–6 hours',
-    confidence: 0.91,
+    confidence: 0.93,
     contributingFactors: [
       { factor: 'New Bus Stand Runoff Surge', importanceScore: 0.38, impact: 'strong_positive', description: 'Runoff accumulating along Sekkalai main artery' },
       { factor: 'Commercial Waste Inflow', importanceScore: 0.32, impact: 'positive', description: 'Retail debris partially blocking storm inlet channels' }
@@ -227,7 +305,7 @@ const initialPredictions: RiskPrediction[] = [
     location: {
       latitude: 9.9481,
       longitude: 78.8252,
-      ward: 'Ward 5',
+      ward: 'Devakottai Ward 5',
       areaName: 'Silambani Bazaar Basin, Devakottai',
       district: 'Sivaganga',
       elevationMeters: 52.1
@@ -235,7 +313,7 @@ const initialPredictions: RiskPrediction[] = [
     riskProbability: 0.82,
     riskLevel: 'critical',
     expectedTimeWindow: 'Next 2–4 hours',
-    confidence: 0.92,
+    confidence: 0.94,
     contributingFactors: [
       { factor: 'Market Canal Blockage', importanceScore: 0.45, impact: 'strong_positive', description: 'Silambani market waste choking primary runoff canal' },
       { factor: 'Sudden Downpour Forecast', importanceScore: 0.35, impact: 'positive', description: '35mm rain predicted in Devakottai municipal area' }
@@ -252,15 +330,15 @@ const initialPredictions: RiskPrediction[] = [
     location: {
       latitude: 10.8220,
       longitude: 78.6850,
-      ward: 'Ward 30',
+      ward: 'Trichy Ward 30',
       areaName: 'Thillai Nagar Main Road, Trichy',
       district: 'Tiruchirappalli',
       elevationMeters: 85.2
     },
-    riskProbability: 0.74,
+    riskProbability: 0.76,
     riskLevel: 'high',
     expectedTimeWindow: 'Next 4–8 hours',
-    confidence: 0.89,
+    confidence: 0.91,
     contributingFactors: [
       { factor: 'Manhole Backpressure Signal', importanceScore: 0.40, impact: 'strong_positive', description: 'Pressure sensor alerts along Thillai Nagar main line' },
       { factor: 'High Commercial Water Discharge', importanceScore: 0.34, impact: 'positive', description: 'Peak evening sewage flow volume' }
@@ -269,6 +347,81 @@ const initialPredictions: RiskPrediction[] = [
     modelVersion: 'v1.3.0-xgboost-spatial',
     createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     dataFreshnessMinutes: 20,
+    verified: false
+  },
+  {
+    id: 'pred-205',
+    category: 'waterlogging',
+    location: {
+      latitude: 10.0760,
+      longitude: 78.7890,
+      ward: 'Karaikudi Ward 8',
+      areaName: 'Alagappa Univ Campus Approach, Karaikudi',
+      district: 'Sivaganga',
+      elevationMeters: 80.2
+    },
+    riskProbability: 0.84,
+    riskLevel: 'critical',
+    expectedTimeWindow: 'Next 1–2 hours',
+    confidence: 0.95,
+    contributingFactors: [
+      { factor: 'College Road Ingress Blockage', importanceScore: 0.48, impact: 'strong_positive', description: 'Runoff pooling near campus gates A & B' },
+      { factor: 'Sub-surface Soil Saturation', importanceScore: 0.26, impact: 'positive', description: 'Red loam topsoil reached 95% moisture capacity' }
+    ],
+    recommendedAction: 'Deploy Karaikudi municipal pump tractor unit to Alagappa campus north culvert.',
+    modelVersion: 'v1.3.0-xgboost-spatial',
+    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    dataFreshnessMinutes: 5,
+    verified: false
+  },
+  {
+    id: 'pred-206',
+    category: 'waterlogging',
+    location: {
+      latitude: 10.8622,
+      longitude: 78.6908,
+      ward: 'Trichy Ward 5',
+      areaName: 'Srirangam Temple North Gate, Trichy',
+      district: 'Tiruchirappalli',
+      elevationMeters: 82.4
+    },
+    riskProbability: 0.81,
+    riskLevel: 'critical',
+    expectedTimeWindow: 'Next 2–4 hours',
+    confidence: 0.93,
+    contributingFactors: [
+      { factor: 'Kaveri River Tributary Backflow', importanceScore: 0.50, impact: 'strong_positive', description: 'High river head restricting drainage outfall discharge' },
+      { factor: 'Pilgrim Corridor Footfall Load', importanceScore: 0.22, impact: 'positive', description: 'Over 15,000 pedestrians active in temple zone' }
+    ],
+    recommendedAction: 'Engage Trichy Corporation de-watering squads and install flood barrier sandbags at North Chithirai entry.',
+    modelVersion: 'v1.3.0-xgboost-spatial',
+    createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    dataFreshnessMinutes: 10,
+    verified: false
+  },
+  {
+    id: 'pred-207',
+    category: 'pothole',
+    location: {
+      latitude: 9.9492,
+      longitude: 78.1560,
+      ward: 'Madurai Ward 35',
+      areaName: 'Mattuthavani Ring Road, Madurai',
+      district: 'Madurai',
+      elevationMeters: 105.0
+    },
+    riskProbability: 0.86,
+    riskLevel: 'critical',
+    expectedTimeWindow: 'Immediate',
+    confidence: 0.96,
+    contributingFactors: [
+      { factor: 'Heavy Bus Transit Dynamic Load', importanceScore: 0.44, impact: 'strong_positive', description: 'Over 800 intercity buses traversing damaged asphalt section per hour' },
+      { factor: 'Rain Infiltration Base Erosion', importanceScore: 0.36, impact: 'positive', description: 'Sub-base soil washed out creating structural cavity' }
+    ],
+    recommendedAction: 'Deploy PWD rapid cold-mix asphalt patch truck and place luminous hazard barricades.',
+    modelVersion: 'v1.3.0-xgboost-spatial',
+    createdAt: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
+    dataFreshnessMinutes: 14,
     verified: false
   }
 ];

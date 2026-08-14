@@ -328,9 +328,11 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
   };
 
   // Submit Report
-  const handleSubmitReport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!description.trim()) return;
+  const handleSubmitReport = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!description.trim() && !voiceTextPrompt.trim() && !imagePreview) return;
+
+    const reportDesc = description.trim() || voiceTextPrompt.trim() || `Civic issue identified via photo analysis at ${ward}`;
 
     setIsProcessingAi(true);
     try {
@@ -351,7 +353,7 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
         : authUser?.displayName || authUser?.email?.split('@')[0] || 'Kavitha Ramachandran';
 
       const reportPayload = {
-        description,
+        description: reportDesc,
         category,
         severity,
         isAnonymous,
@@ -361,7 +363,7 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
         location: {
           latitude: locInfo.lat,
           longitude: locInfo.lng,
-          ward: ward.split(' ')[0] + ' ' + ward.split(' ')[1],
+          ward: ward.split(' ')[0] + ' ' + (ward.split(' ')[1] || ''),
           areaName: locInfo.area,
           district: locInfo.dist
         }
@@ -384,14 +386,15 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
           ...reportPayload,
           createdAt: serverTimestamp(),
           status: 'verified',
-          aiConfidence: extractedAiData?.confidence || 0.91
+          aiConfidence: extractedAiData?.confidence || imageQualityCheck?.confidence || 0.95
         });
       } catch (fsErr) {
         console.warn('Firestore write notice:', fsErr);
       }
 
-      setSubmitSuccess('Your signal has been registered and ingested into the predictive risk engine! Email alert dispatched to selvaappdeveloper7475@gmail.com and SMS alert sent to 7539905792.');
+      setSubmitSuccess('Your signal has been registered and ingested into the predictive risk engine! Email alert dispatched to selvaappdeveloper7475@gmail.com and SMS alert sent to +91 7539905792.');
       setDescription('');
+      setVoiceTextPrompt('');
       setImagePreview(null);
       setExtractedAiData(null);
       setImageQualityCheck(null);
@@ -729,12 +732,43 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base text-white">{t.formTitle}</h3>
-              <p className="text-xs text-slate-400">Detailed text description with manual ward selection.</p>
+              <p className="text-xs text-slate-400">Detailed text description with real-time AI issue prediction.</p>
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-slate-300 font-medium block mb-1">Description:</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs text-slate-300 font-medium">Description (Tamil / Tanglish / English):</label>
+              {description.trim().length > 5 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsProcessingAi(true);
+                    try {
+                      const res = await fetch('/api/v1/ai/analyze-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: description })
+                      }).catch(() => null);
+                      if (res && res.ok) {
+                        const data = await res.json().catch(() => null);
+                        if (data && data.data) {
+                          setExtractedAiData(data.data);
+                          setCategory(data.data.category || category);
+                          setSeverity(data.data.severity || severity);
+                        }
+                      }
+                    } finally {
+                      setIsProcessingAi(false);
+                    }
+                  }}
+                  className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center space-x-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Run Live AI Prediction</span>
+                </button>
+              )}
+            </div>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -743,6 +777,35 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
               className="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-3 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
               required
             />
+          </div>
+
+          {/* Quick Urban Corridor Selector */}
+          <div>
+            <label className="text-xs text-slate-300 font-medium block mb-1.5 flex items-center">
+              <MapPin className="w-3.5 h-3.5 mr-1 text-cyan-400" />
+              Quick Select Urban Corridor:
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: 'Madurai (Goripalayam)', val: 'Madurai Ward 20 (Goripalayam)' },
+                { label: 'Karaikudi (Sekkalai)', val: 'Karaikudi Ward 12 (Sekkalai Road)' },
+                { label: 'Devakottai (Bazaar)', val: 'Devakottai Ward 5 (Silambani Bazaar)' },
+                { label: 'Trichy (Chatram)', val: 'Trichy Ward 24 (Chatram Bus Stand)' }
+              ].map(cor => (
+                <button
+                  type="button"
+                  key={cor.val}
+                  onClick={() => setWard(cor.val)}
+                  className={`p-2 rounded-lg text-[11px] font-medium transition text-left cursor-pointer border ${
+                    ward === cor.val
+                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-200 font-bold'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {cor.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-xs">
@@ -783,6 +846,40 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
             </div>
           </div>
 
+          {/* Real-time AI Issue Prediction & Accuracy Card if available */}
+          {extractedAiData && (
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-cyan-500/30 text-xs space-y-2">
+              <div className="flex items-center justify-between text-cyan-300 font-bold">
+                <span className="flex items-center">
+                  <Sparkles className="w-3.5 h-3.5 mr-1 text-cyan-400" />
+                  AI Prediction & Accuracy Matrix
+                </span>
+                <span className="font-mono text-[10px] bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
+                  Confidence: {Math.round((extractedAiData.confidence || 0.95) * 100)}%
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-slate-300 text-[11px]">
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Predicted Dept:</span>
+                  <span className="text-white font-semibold">{extractedAiData.recommendedDepartment || 'Stormwater Drainage'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Estimated SLA:</span>
+                  <span className="text-amber-400 font-semibold">{extractedAiData.estimatedSlaHours || 6} Hours</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px]">Urgency Rating:</span>
+                  <span className="text-rose-400 font-semibold">{extractedAiData.urgencyRating || 8.2} / 10</span>
+                </div>
+              </div>
+              {extractedAiData.predictedHazardImpact && (
+                <p className="text-[10.5px] text-slate-400 bg-slate-900/80 p-2 rounded border border-slate-800 italic">
+                  <strong>Hazard Forecast:</strong> {extractedAiData.predictedHazardImpact}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center space-x-2 pt-1">
             <input
               type="checkbox"
@@ -799,7 +896,7 @@ export const CitizenPortal: React.FC<CitizenPortalProps> = ({
           <button
             type="submit"
             disabled={isProcessingAi || !description.trim()}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
           >
             <Send className="w-4 h-4" />
             <span>{t.formSubmit}</span>

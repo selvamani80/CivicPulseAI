@@ -7,7 +7,7 @@ import {
   User
 } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase.js';
-import { Mail, Lock, User as UserIcon, LogIn, UserPlus, X, AlertCircle, Loader2, Copy, Check } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, LogIn, UserPlus, X, AlertCircle, Loader2, Copy, Check, Sparkles, ArrowRight } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -84,6 +84,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
+  const handleDemoUserLogin = async () => {
+    setError(null);
+    setLoading(true);
+    const demoEmail = 'demo.civic@civicpulse.org';
+    const demoPass = 'CivicPulseDemo2026!';
+    const demoName = 'Demo User (Citizen & Officer)';
+
+    try {
+      let userCred;
+      try {
+        userCred = await signInWithEmailAndPassword(auth, demoEmail, demoPass);
+      } catch {
+        userCred = await createUserWithEmailAndPassword(auth, demoEmail, demoPass);
+        await updateProfile(userCred.user, { displayName: demoName });
+      }
+      if (onSuccess) onSuccess(userCred.user);
+      onClose();
+    } catch (err: any) {
+      console.error('Demo login error:', err);
+      setError(err.message || 'Demo login failed. Please try again or sign up with email below.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-slate-100 space-y-5 animate-in fade-in zoom-in duration-200">
@@ -103,6 +128,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <p className="text-xs text-slate-400">
             Access officer dispatches, track citizen reports, and view AI hazard predictions.
           </p>
+        </div>
+
+        {/* 1-Click Instant Demo User Login */}
+        <button
+          type="button"
+          onClick={handleDemoUserLogin}
+          disabled={loading}
+          className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-teal-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-between border border-emerald-400/30 disabled:opacity-50 cursor-pointer group"
+        >
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-xs group-hover:scale-110 transition-transform">
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            </div>
+            <div className="text-left">
+              <div className="flex items-center space-x-1.5 font-bold">
+                <span>⚡ 1-Click Demo User Login</span>
+                <span className="text-[10px] bg-emerald-400/25 text-emerald-200 border border-emerald-400/40 px-1.5 py-0.5 rounded font-mono">
+                  Instant
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-100 font-normal">
+                Explore citizen & officer portal with 1 click
+              </p>
+            </div>
+          </div>
+          {loading ? (
+            <Loader2 className="w-5 h-5 text-emerald-200 animate-spin" />
+          ) : (
+            <ArrowRight className="w-5 h-5 text-emerald-200 group-hover:translate-x-1 transition-transform" />
+          )}
+        </button>
+
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-slate-800 w-full"></div>
+          <span className="bg-slate-900 px-3 text-[11px] text-slate-500 uppercase font-mono absolute">
+            Or continue with
+          </span>
         </div>
 
         {/* Google Sign-In Button */}
